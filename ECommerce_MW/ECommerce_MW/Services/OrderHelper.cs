@@ -4,6 +4,7 @@ using ECommerce_MW.DAL.Entities;
 using ECommerce_MW.Enums;
 using ECommerce_MW.Helpers;
 using ECommerce_MW.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace ECommerce_MW.Services
 {
@@ -80,6 +81,25 @@ namespace ECommerce_MW.Services
                 }
             }
             return response;
+        }
+
+        public async Task<Response> CancelOrderAsync(Guid orderId)
+        {
+            Order order = await _context.Orders
+                .Include(o => o.OrderDetails)
+                .ThenInclude(od => od.Product)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            foreach (OrderDetail orderDetail in order.OrderDetails)
+            {
+                Product product = await _context.Products.FindAsync(orderDetail.Product.Id);
+                if (product != null)
+                    product.Stock += orderDetail.Quantity;
+            }
+
+            order.OrderStatus = OrderStatus.Cancelado;
+            await _context.SaveChangesAsync();
+            return new Response { IsSuccess = true };
         }
     }
 }

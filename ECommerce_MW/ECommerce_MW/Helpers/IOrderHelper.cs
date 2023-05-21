@@ -6,5 +6,7 @@ namespace ECommerce_MW.Helpers
     public interface IOrderHelper
     {
         Task<Response> ProcessOrderAsync(ShowCartViewModel showCartViewModel);
+
+        Task<Response> CancelOrderAsync(Guid orderId);
     }
 }
