@@ -6,10 +6,40 @@
 
 <flash dismissable="true" />
 
-@if (Model.Quantity > 0)
-{
-    <a asp-action="ShowCartAndConfirm" class="btn btn-outline-primary">Ver Carro de Compras (@Model.Quantity)</a>
-}
+<h1>ECommmerce</h1>
+<h3>Categorías</h3>
+
+<div class="mb-2">
+    @foreach (var item in Model.Categories)
+    {
+        <span>@item.Name&nbsp;&nbsp;</span>
+    }
+</div>
+
+<form asp-action="Index" method="get">
+    <div class="form-actions no-color">
+        <p>
+            Buscar por nombre o categoría: <input type="text" name="SearchString" value="@ViewBag.CurrentFilter" />
+            <input type="submit" value="Buscar" class="btn btn-warning" />
+            <a asp-action="Index" class="btn btn-success">Ver Todos los Productos</a>
+        </p>
+    </div>
+</form>
+
+<div class="mb-2 d-flex justify-content-between">
+    <div>
+        <h5>Orderar por:</h5>
+        <a asp-action="Index" asp-route-sortOrder="@ViewBag.NameSortParm" class="btn btn-outline-info">Nombre</a>&nbsp;&nbsp;
+        <a asp-action="Index" asp-route-sortOrder="@ViewBag.PriceSortParm" class="btn btn-outline-info">Precio</a>
+    </div>
+    <div>
+        @if (Model.Quantity > 0)
+        {
+            <br />
+            <a asp-action="ShowCartAndConfirm" class="btn btn-outline-primary">Ver Carro de Compras (@Model.Quantity)</a>
+        }
+    </div>
+</div>
 
 @if (User.Identity.IsAuthenticated && User.IsInRole("Admin"))
 {

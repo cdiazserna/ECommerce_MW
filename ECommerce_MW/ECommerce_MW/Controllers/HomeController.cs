@@ -25,18 +25,47 @@ namespace ECommerce_MW.Controllers
             _orderHelper = orderHelper;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string sortOrder, string searchString)
         {
-            List<Product>? products = await _context.Products
-               .Include(p => p.ProductImages)
-               .Include(p => p.ProductCategories)
-               .OrderBy(p => p.Description)
-               .ToListAsync();
-
+            ViewBag.NameSortParm = string.IsNullOrEmpty(sortOrder) ? "NameDesc" : "";
+            ViewBag.PriceSortParm = sortOrder == "Price" ? "PriceDesc" : "Price";
             ViewBag.UserFullName = GetUserFullName();
+            ViewBag.CurrentFilter = searchString;
+
+            IQueryable<Product> query = _context.Products
+                .Include(p => p.ProductImages)
+                .Include(p => p.ProductCategories)
+                .ThenInclude(pc => pc.Category);
+
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                query = query.Where(p => (p.Name.ToLower().Contains(searchString.ToLower()) ||
+                                          p.ProductCategories.Any(pc => pc.Category.Name.ToLower()
+                                            .Contains(searchString.ToLower()))));
+            }
+
+            switch (sortOrder)
+            {
+                case "NameDesc":
+                    query = query.OrderByDescending(p => p.Name);
+                    break;
+                case "Price":
+                    query = query.OrderBy(p => p.Price);
+                    break;
+                case "PriceDesc":
+                    query = query.OrderByDescending(p => p.Price);
+                    break;
+                default:
+                    query = query.OrderBy(p => p.Name);
+                    break;
+            }
 
             //Begins New change
-            HomeViewModel homeViewModel = new() { Products = products };
+            HomeViewModel homeViewModel = new()
+            { 
+                Products = await query.ToListAsync(),
+                Categories = await _context.Categories.ToListAsync()
+            };
 
             User user = await _userHelper.GetUserAsync(User.Identity.Name);
             if (user != null)

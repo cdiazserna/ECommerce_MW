@@ -6,6 +6,8 @@ namespace ECommerce_MW.Models
     {
         public ICollection<Product> Products { get; set; }
 
+        public ICollection<Category> Categories { get; set; }
+
         //Esta propiedad me muestra cuánto productos llevo agregados al carrito de compras.
         public float Quantity { get; set; }
     }
