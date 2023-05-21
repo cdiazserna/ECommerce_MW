@@ -76,12 +76,11 @@ namespace ECommerce_MW.Controllers
             if (order == null) return NotFound();
 
             if (order.OrderStatus != OrderStatus.Despachado)
-            {
                 _flashMessage.Danger(String.Format("Solo se pueden enviar pedidos que estén en estado '{0}'.", OrderStatus.Despachado));
-            }
             else
             {
                 order.OrderStatus = OrderStatus.Enviado;
+                order.ModifiedDate = DateTime.Now;
                 _context.Orders.Update(order);
                 await _context.SaveChangesAsync();
                 _flashMessage.Confirmation(String.Format("El estado del pedido ha sido cambiado a '{0}'.", OrderStatus.Enviado));
@@ -94,21 +93,22 @@ namespace ECommerce_MW.Controllers
         {
             if (orderId == null) return NotFound();
 
-            Order sale = await _context.Orders.FindAsync(orderId);
-            if (sale == null) return NotFound();
+            Order order = await _context.Orders.FindAsync(orderId);
+            if (order == null) return NotFound();
 
-            if (sale.OrderStatus != OrderStatus.Enviado)
+            if (order.OrderStatus != OrderStatus.Enviado)
                 _flashMessage.Danger(String.Format("Solo se pueden enviar pedidos que estén en estado '{0}'.", OrderStatus.Enviado));
             else
             {
-                sale.OrderStatus = OrderStatus.Confirmado;
-                _context.Orders.Update(sale);
+                order.OrderStatus = OrderStatus.Confirmado;
+                order.ModifiedDate = DateTime.Now;
+                _context.Orders.Update(order);
                 await _context.SaveChangesAsync();
                 _flashMessage.Confirmation(String.Format("El estado del pedido ha sido cambiado a '{0}'.", OrderStatus.Confirmado));
 
             }
 
-            return RedirectToAction(nameof(Details), new { orderId = sale.Id });
+            return RedirectToAction(nameof(Details), new { orderId = order.Id });
         }
 
 
