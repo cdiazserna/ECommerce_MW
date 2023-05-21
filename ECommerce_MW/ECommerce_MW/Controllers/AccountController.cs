@@ -6,6 +6,7 @@ using ECommerce_MW.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Vereyon.Web;
 
 namespace ECommerce_MW.Controllers
 {
@@ -15,14 +16,16 @@ namespace ECommerce_MW.Controllers
 		private readonly DatabaseContext _context;
 		private readonly IDropDownListsHelper _ddlHelper;
 		private readonly IAzureBlobHelper _azureBlobHelper;
+        private readonly IFlashMessage _flashMessage;
 
-		public AccountController(IUserHelper userHelper, DatabaseContext context, IDropDownListsHelper dropDownListsHelper, IAzureBlobHelper azureBlobHelper)
+        public AccountController(IUserHelper userHelper, DatabaseContext context, IDropDownListsHelper dropDownListsHelper, IAzureBlobHelper azureBlobHelper, IFlashMessage flashMessage)
 		{
 			_userHelper = userHelper;
 			_context = context;
             _ddlHelper = dropDownListsHelper;
 			_azureBlobHelper = azureBlobHelper;
-		}
+            _flashMessage = flashMessage;
+        }
 
         [HttpGet]
         public IActionResult Login()
@@ -46,7 +49,7 @@ namespace ECommerce_MW.Controllers
                     return RedirectToAction("Index", "Home");
                 }
 
-                ModelState.AddModelError(string.Empty, "Email o contraseña incorrectos.");
+                _flashMessage.Danger("Email o contraseña incorrectos.");
             }
             return View(loginViewModel);
         }
@@ -96,7 +99,7 @@ namespace ECommerce_MW.Controllers
                 User user = await _userHelper.AddUserAsync(addUserViewModel);
                 if (user == null)
                 {
-                    ModelState.AddModelError(string.Empty, "Este correo ya está siendo usado.");
+                    _flashMessage.Danger(String.Format("El email {0} ya está siendo usado.", addUserViewModel.Username));
                     await FillDropDownListLocation(addUserViewModel);
                     return View(addUserViewModel);
                 }
@@ -111,7 +114,11 @@ namespace ECommerce_MW.Controllers
 
                 var login = await _userHelper.LoginAsync(loginViewModel);
 
-                if (login.Succeeded) return RedirectToAction("Index", "Home");
+                if (login.Succeeded)
+                {
+                    _flashMessage.Confirmation(String.Format("Usuario {0} registrado y loggeado exitosamente.", user.FullName));
+                    return RedirectToAction("Index", "Home");
+                }
             }
 
             await FillDropDownListLocation(addUserViewModel);
