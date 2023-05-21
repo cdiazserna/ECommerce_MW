@@ -5,7 +5,7 @@ using ECommerce_MW.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Vereyon.Web;
 
 namespace ECommerce_MW.Controllers
 {
@@ -16,12 +16,14 @@ namespace ECommerce_MW.Controllers
         private readonly DatabaseContext _context;
         private readonly IDropDownListsHelper _dropDownListsHelper;
         private readonly IAzureBlobHelper _azureBlobHelper;
+        private readonly IFlashMessage _flashMessage;
 
-        public ProductsController(DatabaseContext context, IDropDownListsHelper dropDownListsHelper, IAzureBlobHelper azureBlobHelper)
+        public ProductsController(DatabaseContext context, IDropDownListsHelper dropDownListsHelper, IAzureBlobHelper azureBlobHelper, IFlashMessage flashMessage)
         {
             _context = context;
             _dropDownListsHelper = dropDownListsHelper;
             _azureBlobHelper = azureBlobHelper;
+            _flashMessage = flashMessage;
         }
 
         public async Task<IActionResult> Index()
@@ -83,22 +85,19 @@ namespace ECommerce_MW.Controllers
 
                     _context.Add(product);
                     await _context.SaveChangesAsync();
+                    _flashMessage.Confirmation(String.Format("El product {0} se ha guardado satisfactoriamente.", product.Name));
                     return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateException dbUpdateException)
                 {
                     if (dbUpdateException.InnerException.Message.Contains("duplicate"))
-                    {
-                        ModelState.AddModelError(string.Empty, "Ya existe un producto con el mismo nombre.");
-                    }
+                        _flashMessage.Danger(String.Format("Ya existe el producto {0}.", addProductViewModel.Name));
                     else
-                    {
-                        ModelState.AddModelError(string.Empty, dbUpdateException.InnerException.Message);
-                    }
+                        _flashMessage.Danger(dbUpdateException.InnerException.Message);
                 }
                 catch (Exception exception)
                 {
-                    ModelState.AddModelError(string.Empty, exception.Message);
+                    _flashMessage.Danger(exception.Message);
                 }
             }
 
@@ -197,7 +196,7 @@ namespace ECommerce_MW.Controllers
                     Guid imageId = await _azureBlobHelper.UploadAzureBlobAsync(addProductImageViewModel.ImageFile, "products");
 
                     Product product = await _context.Products.FindAsync(addProductImageViewModel.ProductId);
-                
+
                     ProductImage productImage = new()
                     {
                         Product = product,
@@ -224,7 +223,7 @@ namespace ECommerce_MW.Controllers
             ProductImage productImage = await _context.ProductImages
                 .Include(pi => pi.Product)
                 .FirstOrDefaultAsync(pi => pi.Id == imageId);
-            
+
             if (productImage == null) return NotFound();
 
             await _azureBlobHelper.DeleteAzureBlobAsync(productImage.ImageId, "products");
@@ -274,10 +273,10 @@ namespace ECommerce_MW.Controllers
                 try
                 {
                     ProductCategory productCategory = new()
-                {
-                    Category = await _context.Categories.FindAsync(addCategoryProductViewModel.CategoryId),
-                    Product = product,
-                };
+                    {
+                        Category = await _context.Categories.FindAsync(addCategoryProductViewModel.CategoryId),
+                        Product = product,
+                    };
 
                     _context.Add(productCategory);
                     await _context.SaveChangesAsync();
@@ -324,7 +323,7 @@ namespace ECommerce_MW.Controllers
                 .Include(p => p.ProductCategories)
                 .Include(p => p.ProductImages)
                 .FirstOrDefaultAsync(p => p.Id == productId);
-            
+
             if (product == null) return NotFound();
 
             return View(product);
