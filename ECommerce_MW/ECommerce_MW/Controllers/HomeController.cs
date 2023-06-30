@@ -32,7 +32,7 @@ namespace ECommerce_MW.Controllers
             ViewBag.UserFullName = GetUserFullName();
             ViewBag.CurrentFilter = searchString;
 
-            IQueryable<Product> query = _context.Products
+            IEnumerable<Product> query = _context.Products
                 .Include(p => p.ProductImages)
                 .Include(p => p.ProductCategories)
                 .ThenInclude(pc => pc.Category);
@@ -63,7 +63,7 @@ namespace ECommerce_MW.Controllers
             //Begins New change
             HomeViewModel homeViewModel = new()
             { 
-                Products = await query.ToListAsync(),
+               // Products = await query.ToListAsync(),
                 Categories = await _context.Categories.ToListAsync()
             };
 
